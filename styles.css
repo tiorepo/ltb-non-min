@@ -271,13 +271,20 @@ html, body {
   font-size: 16px;
   font-weight: 500;
   color: #172b4d;
-  background-color: #ffffff66;
+  background-color: #ccccccee;
   border-radius: 6px;
   box-sizing: border-box;
-  Xresize: none;
-  resize: both;
+  resize: none;
   margin-bottom: 8px;
   white-space: pre-line;
+  max-width:100%;
+  min-width:182px;
+}
+
+.card-textarea:focus {
+  z-index:1;
+  resize: both !important;
+  max-width: none;
 }
 
 /* Footer overrides for light card */

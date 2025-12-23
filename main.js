@@ -2,8 +2,9 @@ var boardNames = [];
 var currentBoardName = '';
 var backlogTypeName = 'BACKLOG';
 var preferences = { isDarkMode: true };
+var emptyBoard = { name: '', columns: [] };
+var currentBoard = emptyBoard;
 
-//the board name is used by local storage. 
 var defaultColumns = [
     {name: 'Backlog', cards: []},
     {name: 'ToDo', cards: []},
@@ -12,28 +13,12 @@ var defaultColumns = [
     {name: 'Done', cards: []},
     {name: 'Archive', cards: []}
 ]
-//var newBoard = 
-
-/*
-What should be in the datastore ? 
-boardNames = []; //you have this.
-eachboard with a name 
-
-board contains all data for that board is an ordered array of columns
-where cok
-each column object has an 
-board: Array<Column> //ordered by appearance. 
-column: Column where Colum { string name, cards }
-card: Card where
-*/
-
-var cardTypes = ['BACKLOG', 'TODO', 'INPROGRESS', 'BLOCKED', 'DONE', 'ARCHIVE'];
-
+//card = { text: string, textareaWidth, textareaHeight }
 var allCards = {};
 var selectedCardIndexes = {};
 
-const BOARD_NAMES_STORAGE_ITEM_NAME = 'board-names-json';
-const CURRENT_BOARD_NAME_STORAGE_ITEM_NAME = 'current-board-name';
+const BOARD_NAMES_STORAGE_KEY = 'board-names-json';
+const CURRENT_BOARD_NAME_STORAGE_key = 'current-board-name';
 var lastKeypressTimeoutRef = 0; 
 
 function init() {
@@ -43,15 +28,17 @@ function init() {
 
 function loadData() {
     clearAllCards();
-    boardNames = JSON.parse(localStorage.getItem(BOARD_NAMES_STORAGE_ITEM_NAME)) ?? [];
+    boardNames = JSON.parse(localStorage.getItem(BOARD_NAMES_STORAGE_KEY)) ?? [];
     renderBoardsDdl();
 
     if (boardNames.length > 0) {
         $('.popup-welcome-message').hide();
         $('.info-esc-close-modal').show();
-        updateCurrentBoardName(localStorage.getItem(CURRENT_BOARD_NAME_STORAGE_ITEM_NAME) ?? boardNames[0]);
-        loadCardsForCurrentBoard();
-        renderAllCards();
+        updateCurrentBoardName(localStorage.getItem(CURRENT_BOARD_NAME_STORAGE_key) ?? boardNames[0]);
+        //loadCardsForCurrentBoard(); //loadBoard
+        loadBoard();
+        renderBoard();
+        //renderAllCards();
     } else {
         closePopup(); //close resets all the css properties
         $('.popup-overlay').show();
@@ -62,20 +49,18 @@ function loadData() {
 
 function bindUserEvents() {
     $('.top-bar-select').on('change', onBoardSelectChange);
+    $('.top-bar-button').on('click', function() {onTopBarButtonClick($(this))});
     $('#new-board-add-button').on('click', onNewBoardNameAddClick);
     $('.popup-close').on('click', closePopup);
     $('.popup-archive').find('.popup-button').on('click', function() { onPopupArchiveButtonClick($(this))});
-    $('.column-add').on('click', function() { onAddNewCardClick($(this))});
-
-    $('.column-body').on('click', '.card-edit' ,function() { onEditCardButtonClick($(this))});
-    $('.column-body').on('click', '.card-action' ,function() { onEditCardActionClick($(this))});
-    $('.column-body').on('click', '.card', function() { onCardClick($(this))});
+    
     $(document).on('keydown', function(event) { onKeyDown(event) });
-
-    $('.column-body').on('click', '.card-action-save' ,function() { onEditCardSaveClick($(this))});
-    $('.column-body').on('click', '.card-action-undo' ,function() { onEditCardUndoClick($(this))});
-
-    $('.top-bar-button').on('click', function() {onTopBarButtonClick($(this))});
+    $('.board').on('click', '.column-add', function() { onAddNewCardClick($(this))});
+    $('.board').on('click', '.card-edit' ,function() { onEditCardButtonClick($(this))});
+    $('.board').on('click', '.card-action' ,function() { onEditCardActionClick($(this))});
+    $('.board').on('click', '.card', function() { onCardClick($(this))});
+    $('.board').on('click', '.card-action-save' ,function() { onEditCardSaveClick($(this))});
+    $('.board').on('click', '.card-action-undo' ,function() { onEditCardUndoClick($(this))});
    
     $('.modal-close').on('click', function() {$('.modal-overlay').hide()});
     $('.modal-button-copy').on('click', onModalCopyClick );
@@ -91,10 +76,10 @@ function onPopupArchiveButtonClick(buttonElement) {
         if(result) {
             var index = boardNames.indexOf(currentBoardName);
             boardNames.splice(index,1);
-            localStorage.setItem(BOARD_NAMES_STORAGE_ITEM_NAME, JSON.stringify(boardNames));
+            localStorage.setItem(BOARD_NAMES_STORAGE_KEY, JSON.stringify(boardNames));
             alert(`${currentBoardName} has been achived.`);
             currentBoardName = null;
-            localStorage.removeItem(CURRENT_BOARD_NAME_STORAGE_ITEM_NAME);
+            localStorage.removeItem(CURRENT_BOARD_NAME_STORAGE_key);
             loadData();
         }
     } else if ($(buttonElement).hasClass('delete-current-board-button')) {
@@ -117,13 +102,13 @@ function onPopupArchiveButtonClick(buttonElement) {
 function deleteBoard(boardNameToDelete) {
     var index = boardNames.indexOf(boardNameToDelete);
     boardNames.splice(index, 1);
-    localStorage.setItem(BOARD_NAMES_STORAGE_ITEM_NAME, JSON.stringify(boardNames));
+    localStorage.setItem(BOARD_NAMES_STORAGE_KEY, JSON.stringify(boardNames));
     var storageItemName = generateLocalStorageItemName(boardNameToDelete);
     localStorage.removeItem(storageItemName);
 
     if ($('#board-select').val() == -1) {
         currentBoardName = null;
-        localStorage.removeItem(CURRENT_BOARD_NAME_STORAGE_ITEM_NAME);
+        localStorage.removeItem(CURRENT_BOARD_NAME_STORAGE_key);
         alert(`${boardNameToDelete} has been deleted.`);
     }
 }
@@ -310,6 +295,7 @@ function onEditCardActionClick(buttonElement) { //This is for move and delete, n
     var cards = $(parentColumnBodyElement).data('cards');
     var cardIndex = $(parentCardElement).data('card-index');
     var cardText = $(parentCardElement).find('.card-content').text();
+    var card = { text: cardText};
     var parentColumnBodyElementIndex = $('.column-body').index(parentColumnBodyElement);
     var newCardIndex = cardIndex;
     var newColumnIndex = parentColumnBodyElementIndex;
@@ -325,7 +311,7 @@ function onEditCardActionClick(buttonElement) { //This is for move and delete, n
         newColumnIndex -=1;
         var prevColumnElement = $('.column-body').get(newColumnIndex);
         var prevColumnData = $(prevColumnElement).data('cards');
-        prevColumnData.unshift(cardText);
+        prevColumnData.unshift(card);
         newCardIndex = Math.min(newCardIndex, prevColumnData.length - 1);
         moveArrayElement(prevColumnData, 0, newCardIndex);
         renderCards($(prevColumnElement));
@@ -334,7 +320,7 @@ function onEditCardActionClick(buttonElement) { //This is for move and delete, n
         newColumnIndex += 1;
         var nextColumnElement = $('.column-body').get(newColumnIndex);
         var nextColumnData = $(nextColumnElement).data('cards');
-        nextColumnData.unshift(cardText);
+        nextColumnData.unshift(card);
         newCardIndex = Math.min(newCardIndex, nextColumnData.length - 1);
         moveArrayElement(nextColumnData, 0, newCardIndex);
         renderCards($(nextColumnElement));
@@ -349,7 +335,7 @@ function onEditCardActionClick(buttonElement) { //This is for move and delete, n
         cards.splice(cardIndex, 1);
         var archiveColumnElement = $('.column-body').last();
         var archiveColumnData = $(archiveColumnElement).data('cards');
-        archiveColumnData.unshift(cardText);
+        archiveColumnData.unshift(card);
         renderCards($(archiveColumnElement));
     } else if ($(buttonElement).hasClass('card-action-remove') && parentColumnBodyElementIndex == $('.column-body').length - 1) {
         clearSelectedCard();
@@ -396,7 +382,7 @@ function onEditCardSaveClick(buttonElement) {
     var parentCardElement = $(buttonElement).parents('.card-editing'); 
     var cardIndex = $(parentCardElement).data('card-index');
     var cardText = $(parentCardElement).find('textarea').val();
-
+    var card = { text: cardText };
     var parentColumnBodyElement = $(buttonElement).parents('.column-body');
     var cards = $(parentColumnBodyElement).data('cards');
     var newCardIndex = -1;
@@ -404,7 +390,7 @@ function onEditCardSaveClick(buttonElement) {
     if(cardIndex == -1) {
         if(cardText.trim().length > 0) {
             newCardIndex = 0;
-            cards.unshift(cardText);
+            cards.unshift(card);
             saveCurrentBoard();
         } else {
             $(parentCardElement).remove();
@@ -415,7 +401,7 @@ function onEditCardSaveClick(buttonElement) {
         return;
     } else {
         newCardIndex = cardIndex;
-        cards[cardIndex] = cardText;
+        cards[cardIndex] = card;
         saveCurrentBoard();
     }
 
@@ -450,7 +436,7 @@ function onAddNewCardClick(buttonElement) {
 function updateCurrentBoardName(boardName) {
     currentBoardName = boardName;
     $('.top-bar-title').find('span').text(boardName);
-    localStorage.setItem(CURRENT_BOARD_NAME_STORAGE_ITEM_NAME, currentBoardName);
+    localStorage.setItem(CURRENT_BOARD_NAME_STORAGE_key, currentBoardName);
 
     $('#board-select option').filter(function () {
         return $(this).text() == currentBoardName;
@@ -493,7 +479,7 @@ function onBoardSelectChange() {
     }
 }
 
-function onNewBoardNameAddClick() {
+function onNewBoardNameAddClick() { //this is now also for unarchive and rename
     var newBoardName = $('#board-name-input').val();
     var alertMessage = $('#board-select').val() == -1 ?
         'That name is invalid or too similar to an existing. Try again. Note if you have entered the name of an archived board, it has been restored.':
@@ -508,8 +494,10 @@ function onNewBoardNameAddClick() {
     updateCurrentBoardName(newBoardName);
     updateBoardNames(newBoardName);
 
-    if ($('#board-select').val() == -1) {
-        clearAllCards();
+    var isNewBoard = $('#board-select').val() == -1;
+
+    if (isNewBoard) {
+        createNewBoard(newBoardName);
     }
 
     saveCurrentBoard();
@@ -518,7 +506,6 @@ function onNewBoardNameAddClick() {
         deleteBoard(previousBoardName);
     }
 
-    var isNewBoard = $('#board-select').val() == -1;
     loadData();
     $('#new-board-popup').hide();
 
@@ -531,9 +518,13 @@ function onNewBoardNameAddClick() {
     }
 }
 
+function createNewBoard(newBoardName) {
+    currentBoard = { name: newBoardName, columns: [...defaultColumns] };
+}
+
 function updateBoardNames(newBoardName) {
     boardNames.unshift(newBoardName);
-    localStorage.setItem(BOARD_NAMES_STORAGE_ITEM_NAME, JSON.stringify(boardNames));
+    localStorage.setItem(BOARD_NAMES_STORAGE_KEY, JSON.stringify(boardNames));
 }
 
 function clearAllCards() {
@@ -583,11 +574,17 @@ function generateLocalStorageItemName(boardName) {
 
 function saveCurrentBoard() {
     var storageItemName = generateLocalStorageItemName(currentBoardName);
-    var allCardsJson = JSON.stringify(allCards);
-    localStorage.setItem(storageItemName, allCardsJson);
+    var boardJson = JSON.stringify(currentBoard);
+    localStorage.setItem(storageItemName, boardJson);
 }
 
-function loadCardsForCurrentBoard() {
+function loadBoard() {
+    $('.board').empty(); 
+    var storageItemName = generateLocalStorageItemName(currentBoardName);
+    currentBoard = JSON.parse(localStorage.getItem(storageItemName)) ?? emptyBoard;
+}
+
+function loadCardsForCurrentBoardXX() {
     $('.column-body').empty();
 
     var storageItemName = generateLocalStorageItemName(currentBoardName);
@@ -612,8 +609,22 @@ function loadCardsForCurrentBoard() {
     $('#archive-column-body').data('cards', allCards.archiveItems);
 }
 
+function renderBoard() {
+    $('.board').empty();
+
+    for (let c of currentBoard.columns) {
+        var columnClone = $('templates').children('.column').first().clone();
+        $(columnClone).find('.column-title').text(c.name);
+        $(columnClone).find('.column-body').data('cards', c.cards);
+        $('.board').append($(columnClone));
+    }
+
+    $('.board').find('.coumn').last().addClass('column-archive');
+    renderAllCards();
+}
+
 function renderAllCards() {
-    $('.column-body').each(function() {
+    $('.board').find('.column-body').each(function() {
         renderCards($(this));
     });
 }
@@ -629,7 +640,7 @@ function renderCards(columnBodyElement) {
     var cards = $(columnBodyElement).data('cards');
 
     for (var i = 0; i < cards.length; i++) {
-        var text = cards[i];
+        var text = cards[i].text;
         var cardClone = $('templates').children('.card').first().clone();
         $(cardClone).data('card-index', i);
         $(cardClone).children('.card-content').text(text);
