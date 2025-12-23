@@ -18,7 +18,7 @@ var allCards = {};
 var selectedCardIndexes = {};
 
 const BOARD_NAMES_STORAGE_KEY = 'board-names-json';
-const CURRENT_BOARD_NAME_STORAGE_key = 'current-board-name';
+const CURRENT_BOARD_NAME_STORAGE_KEY = 'current-board-name';
 var lastKeypressTimeoutRef = 0; 
 
 function init() {
@@ -34,7 +34,7 @@ function loadData() {
     if (boardNames.length > 0) {
         $('.popup-welcome-message').hide();
         $('.info-esc-close-modal').show();
-        updateCurrentBoardName(localStorage.getItem(CURRENT_BOARD_NAME_STORAGE_key) ?? boardNames[0]);
+        updateCurrentBoardName(localStorage.getItem(CURRENT_BOARD_NAME_STORAGE_KEY) ?? boardNames[0]);
         //loadCardsForCurrentBoard(); //loadBoard
         loadBoard();
         renderBoard();
@@ -61,7 +61,28 @@ function bindUserEvents() {
     $('.board').on('click', '.card', function() { onCardClick($(this))});
     $('.board').on('click', '.card-action-save' ,function() { onEditCardSaveClick($(this))});
     $('.board').on('click', '.card-action-undo' ,function() { onEditCardUndoClick($(this))});
-   
+    $('.board').on('focus', '.card-textarea', function() { 
+        var size = $(this).data('size');
+
+        if(size !=null) {
+            $(this).css('width', size.w);
+            $(this).css('height', size.h);
+        }
+
+        $('body').on('mousemove', function() {
+            var isEditingAndFocus = $(document.activeElement).hasClass('card-textarea');
+
+            if(isEditingAndFocus) {
+                var textareaElement =  $(document.activeElement);
+                var w = parseInt($(textareaElement).css('width'));
+                var h = parseInt($(textareaElement).css('height'));
+                $(textareaElement).data('size', {w, h});
+            } else {
+                $('body').off('mousemove');
+            }
+        });
+    });
+
     $('.modal-close').on('click', function() {$('.modal-overlay').hide()});
     $('.modal-button-copy').on('click', onModalCopyClick );
     $('.modal-button-save').on('click', onModalSaveClick );
@@ -77,17 +98,17 @@ function onPopupArchiveButtonClick(buttonElement) {
             var index = boardNames.indexOf(currentBoardName);
             boardNames.splice(index,1);
             localStorage.setItem(BOARD_NAMES_STORAGE_KEY, JSON.stringify(boardNames));
-            alert(`${currentBoardName} has been achived.`);
             currentBoardName = null;
-            localStorage.removeItem(CURRENT_BOARD_NAME_STORAGE_key);
-            loadData();
+            localStorage.removeItem(CURRENT_BOARD_NAME_STORAGE_KEY);
+            alert(`${currentBoardName} has been achived.`);
+            window.location.reload();
         }
     } else if ($(buttonElement).hasClass('delete-current-board-button')) {
         var result = confirm('You are about to permanently delete the current board. This can not be undone. Are you sure you want to proceed ?');
         
         if(result) {
             deleteBoard(currentBoardName);
-            loadData();
+            window.location.reload();
         }
     } else if ($(buttonElement).hasClass('delete-all-boards-button')) {
         var result = confirm('You are about to DELETE ALL DATA. This can not be undone. Are you sure you want to proceed ?')
@@ -106,11 +127,9 @@ function deleteBoard(boardNameToDelete) {
     var storageItemName = generateLocalStorageItemName(boardNameToDelete);
     localStorage.removeItem(storageItemName);
 
-    if ($('#board-select').val() == -1) {
-        currentBoardName = null;
-        localStorage.removeItem(CURRENT_BOARD_NAME_STORAGE_key);
-        alert(`${boardNameToDelete} has been deleted.`);
-    }
+    currentBoardName = null;
+    localStorage.removeItem(CURRENT_BOARD_NAME_STORAGE_KEY);
+    alert(`${boardNameToDelete} has been deleted.`);
 }
 
 function closePopup() {
@@ -203,7 +222,7 @@ function onCardClick(cardElement) {
         $(cardElement).addClass('card-selected');
         var parentColumnBodyElement = $(cardElement).parents('.column-body');
         var cardIndex = $(cardElement).data('card-index');
-        let columnIndex = $('.column-body').index(parentColumnBodyElement);
+        let columnIndex = $('.board').find('.column-body').index(parentColumnBodyElement);
         selectedCardIndexes = { columnIndex, cardIndex };
     }
 }
@@ -228,6 +247,7 @@ function onModalApplyClick() {
 
 function onModalCopyClick() {
     navigator.clipboard.writeText($('.modal-textarea').val());
+    alert('The json for your boards has been copied to your clipboard.');
 }
 
 function onModalSaveClick() {
@@ -309,7 +329,7 @@ function onEditCardActionClick(buttonElement) { //This is for move and delete, n
     } else if ($(buttonElement).hasClass('card-action-left') && parentColumnBodyElementIndex != 0) {
         cards.splice(cardIndex, 1);
         newColumnIndex -=1;
-        var prevColumnElement = $('.column-body').get(newColumnIndex);
+        var prevColumnElement = $('.board').find('.column-body').get(newColumnIndex);
         var prevColumnData = $(prevColumnElement).data('cards');
         prevColumnData.unshift(card);
         newCardIndex = Math.min(newCardIndex, prevColumnData.length - 1);
@@ -318,7 +338,7 @@ function onEditCardActionClick(buttonElement) { //This is for move and delete, n
     } else if ($(buttonElement).hasClass('card-action-right') && parentColumnBodyElementIndex <  $('.board').find('.column-body').length - 1) {
         cards.splice(cardIndex, 1);
         newColumnIndex += 1;
-        var nextColumnElement = $('.column-body').get(newColumnIndex);
+        var nextColumnElement = $('.board').find('.column-body').get(newColumnIndex);
         var nextColumnData = $(nextColumnElement).data('cards');
         nextColumnData.unshift(card);
         newCardIndex = Math.min(newCardIndex, nextColumnData.length - 1);
@@ -333,7 +353,7 @@ function onEditCardActionClick(buttonElement) { //This is for move and delete, n
     } else if ($(buttonElement).hasClass('card-action-remove') && parentColumnBodyElementIndex <  $('.board').find('.column-body').length - 1) {
         clearSelectedCard();
         cards.splice(cardIndex, 1);
-        var archiveColumnElement = $('.column-body').last();
+        var archiveColumnElement = $('.board').find('.column-body').last();
         var archiveColumnData = $(archiveColumnElement).data('cards');
         archiveColumnData.unshift(card);
         renderCards($(archiveColumnElement));
@@ -349,7 +369,7 @@ function onEditCardActionClick(buttonElement) { //This is for move and delete, n
 
     if(shouldReAddCardSelectedClass) {
         window.setTimeout(function() {
-            var newCardElement = $($('.column-body').get(newColumnIndex)).find('.card').get(newCardIndex);
+            var newCardElement = $($('.board').find('.column-body').get(newColumnIndex)).find('.card').get(newCardIndex);
             $(newCardElement).trigger('click');
         }, 0);
     }
@@ -371,9 +391,15 @@ function onEditCardButtonClick(buttonElement) {
     var parentCardElement = $(buttonElement).parents('.card');
     var cardIndex = $(parentCardElement).data('card-index');
     var cardText = $(parentCardElement).find('.card-content').text();
+    var cardSize = $(parentCardElement).data('size');
     var newEditingCard = $('templates').find('.card-editing').clone();
     $(newEditingCard).data('card-index', cardIndex);
     $(newEditingCard).data('undo', cardText);
+
+    if(cardSize != null) {
+        $(newEditingCard).find('textarea').data('size', cardSize);
+    }
+    
     $(parentCardElement).replaceWith(newEditingCard);
     $(newEditingCard).find('textarea').val(cardText).focus();
 }
@@ -382,7 +408,8 @@ function onEditCardSaveClick(buttonElement) {
     var parentCardElement = $(buttonElement).parents('.card-editing'); 
     var cardIndex = $(parentCardElement).data('card-index');
     var cardText = $(parentCardElement).find('textarea').val();
-    var card = { text: cardText };
+    var cardSize =  $(parentCardElement).find('textarea').data('size');// $(textareaElement).data('size', {w, h});
+    var card = { text: cardText, size: cardSize };
     var parentColumnBodyElement = $(buttonElement).parents('.column-body');
     var cards = $(parentColumnBodyElement).data('cards');
     var newCardIndex = -1;
@@ -407,7 +434,13 @@ function onEditCardSaveClick(buttonElement) {
 
     var cardClone = $('templates').children('.card').first().clone();
     $(cardClone).data('card-index', newCardIndex);
+    $(cardClone).data('size', cardSize);
     $(cardClone).children('.card-content').text(cardText);
+
+    if(preferences.isDarkMode) {
+        $(cardClone).addClass('card-dark-mode');
+    }
+
     $(parentCardElement).replaceWith(cardClone);
     
     if (newCardIndex != -1) {
@@ -436,7 +469,7 @@ function onAddNewCardClick(buttonElement) {
 function updateCurrentBoardName(boardName) {
     currentBoardName = boardName;
     $('.top-bar-title').find('span').text(boardName);
-    localStorage.setItem(CURRENT_BOARD_NAME_STORAGE_key, currentBoardName);
+    localStorage.setItem(CURRENT_BOARD_NAME_STORAGE_KEY, currentBoardName);
 
     $('#board-select option').filter(function () {
         return $(this).text() == currentBoardName;
@@ -510,10 +543,10 @@ function onNewBoardNameAddClick() { //this is now also for unarchive and rename
     $('#new-board-popup').hide();
 
     if (isNewBoard) {
-        $('.boards').find('.column').first().find('.column-add').trigger('click');
+        $('.board').find('.column').first().find('.column-add').trigger('click');
 
         window.setTimeout(function() {
-            $('.boards').find('.card-editing').find('textarea').attr('placeholder', 'Welcome. Start typing here...');
+            $('.board').find('.card-editing').find('textarea').attr('placeholder', 'Welcome. Start typing here...');
         }, 0);
     }
 }
@@ -618,6 +651,7 @@ function renderCards(columnBodyElement) {
         var text = cards[i].text;
         var cardClone = $('templates').children('.card').first().clone();
         $(cardClone).data('card-index', i);
+        $(cardClone).data('size', cards[i].size);
         $(cardClone).children('.card-content').text(text);
         $(columnBodyElement).append($(cardClone));
     }
