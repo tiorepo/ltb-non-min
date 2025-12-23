@@ -127,14 +127,6 @@ html, body {
   border-radius: 4px;
 }
 
-
-/* Column Body */
-/*.column-body {
-  flex: 1;
-  padding: 8px;
-  overflow-y: auto;
-}*/
-
 .column-body {
   padding: 8px;
   overflow: visible;

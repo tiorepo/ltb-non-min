@@ -315,7 +315,7 @@ function onEditCardActionClick(buttonElement) { //This is for move and delete, n
         newCardIndex = Math.min(newCardIndex, prevColumnData.length - 1);
         moveArrayElement(prevColumnData, 0, newCardIndex);
         renderCards($(prevColumnElement));
-    } else if ($(buttonElement).hasClass('card-action-right') && parentColumnBodyElementIndex <  $('.column-body').length - 1) {
+    } else if ($(buttonElement).hasClass('card-action-right') && parentColumnBodyElementIndex <  $('.board').find('.column-body').length - 1) {
         cards.splice(cardIndex, 1);
         newColumnIndex += 1;
         var nextColumnElement = $('.column-body').get(newColumnIndex);
@@ -330,14 +330,14 @@ function onEditCardActionClick(buttonElement) { //This is for move and delete, n
     } else if ($(buttonElement).hasClass('card-action-bottom') && cardIndex < cards.length) {
         newCardIndex = cards.length - 1;
         moveArrayElement(cards, cardIndex, newCardIndex);
-    } else if ($(buttonElement).hasClass('card-action-remove') && parentColumnBodyElementIndex < $('.column-body').length - 1) {
+    } else if ($(buttonElement).hasClass('card-action-remove') && parentColumnBodyElementIndex <  $('.board').find('.column-body').length - 1) {
         clearSelectedCard();
         cards.splice(cardIndex, 1);
         var archiveColumnElement = $('.column-body').last();
         var archiveColumnData = $(archiveColumnElement).data('cards');
         archiveColumnData.unshift(card);
         renderCards($(archiveColumnElement));
-    } else if ($(buttonElement).hasClass('card-action-remove') && parentColumnBodyElementIndex == $('.column-body').length - 1) {
+    } else if ($(buttonElement).hasClass('card-action-remove') && parentColumnBodyElementIndex ==  $('.board').find('.column-body').length - 1) {
         clearSelectedCard();
         cards.splice(cardIndex, 1);
     } else {
@@ -510,10 +510,10 @@ function onNewBoardNameAddClick() { //this is now also for unarchive and rename
     $('#new-board-popup').hide();
 
     if (isNewBoard) {
-        $('.column').first().find('.column-add').trigger('click');
+        $('.boards').find('.column').first().find('.column-add').trigger('click');
 
         window.setTimeout(function() {
-            $('#backlog-column-body').find('.card-editing').find('textarea').attr('placeholder', 'Welcome. Start typing here...');
+            $('.boards').find('.card-editing').find('textarea').attr('placeholder', 'Welcome. Start typing here...');
         }, 0);
     }
 }
@@ -584,31 +584,6 @@ function loadBoard() {
     currentBoard = JSON.parse(localStorage.getItem(storageItemName)) ?? emptyBoard;
 }
 
-function loadCardsForCurrentBoardXX() {
-    $('.column-body').empty();
-
-    var storageItemName = generateLocalStorageItemName(currentBoardName);
-    allCards = JSON.parse(localStorage.getItem(storageItemName)) ?? [];
-    
-    if (allCards.length = 0) {
-        clearAllCards();
-    } else {
-        allCards.backlogItems = allCards.backlogItems ?? [];
-        allCards.todoItems = allCards.todoItems ?? [];
-        allCards.inProgressItems = allCards.inProgressItems ?? [];
-        allCards.blockedItems = allCards.blockedItems ?? [];
-        allCards.doneItems = allCards.doneItems ?? [];
-        allCards.archiveItems =  allCards.archiveItems ?? [];
-    }
-
-    $('#backlog-column-body').data('cards', allCards.backlogItems);
-    $('#todo-column-body').data('cards', allCards.todoItems);
-    $('#in-progress-column-body').data('cards', allCards.inProgressItems);
-    $('#blocked-column-body').data('cards', allCards.blockedItems);
-    $('#done-column-body').data('cards', allCards.doneItems);
-    $('#archive-column-body').data('cards', allCards.archiveItems);
-}
-
 function renderBoard() {
     $('.board').empty();
 
@@ -619,7 +594,7 @@ function renderBoard() {
         $('.board').append($(columnClone));
     }
 
-    $('.board').find('.coumn').last().addClass('column-archive');
+    $('.board').find('.column').last().addClass('column-archive');
     renderAllCards();
 }
 
