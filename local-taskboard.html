@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Local Taskboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
+  <script src="main.js"></script>
+  <script>
+    $(document).ready(function() { init(); })    
+  </script> 
+</head>
+<body>
+  <!-- Top Title Bar -->
+  <div class="top-bar">
+    <div class="top-bar-title"><span>Local</span> Taskboard</div>
+
+    <div class="top-bar-actions">
+      <button class="top-bar-button export-button">Export All Boards</button>
+      <button class="top-bar-button import-button">Import Boards</button>
+      <select id="board-select" class="top-bar-select">
+        <option id="new-board-option" value="-1">...New Board</option>
+      </select>
+      <button class="top-bar-button info-button" style="opacity:0.6; padding-right:4px; font-weight:bold;">&#xFF1F;</button>
+      <button class="top-bar-button archive-button" style="opacity:0.6; font-weight:bold;">&times;</button>
+    </div>
+  </div>
+
+  <!-- Kanban Board -->
+  <div class="board">
+    <div class="column">
+      <div class="column-header">
+        <span class="column-title">Backlog</span>
+        <button class="column-add">+</button>
+      </div>
+      <div id="backlog-column-body" class="column-body"></div>
+    </div>
+
+    <div class="column">
+      <div class="column-header">
+        <span class="column-title">To Do</span>
+        <button class="column-add">+</button>
+      </div>
+      <div id="todo-column-body" class="column-body"></div>
+    </div>
+
+    <div class="column">
+      <div class="column-header">
+        <span class="column-title">In Progress</span>
+        <button class="column-add">+</button>
+      </div>
+
+      <div id="in-progress-column-body" class="column-body"></div>
+    </div>
+
+    <div class="column">
+      <div class="column-header">
+        <span class="column-title">Blocked</span>
+        <button class="column-add">+</button>
+      </div>
+      <div id="blocked-column-body" class="column-body"></div>
+    </div>
+
+    <div class="column">
+      <div class="column-header">
+        <span class="column-title">Done</span>
+        <button class="column-add">+</button>
+      </div>
+      <div id="done-column-body" class="column-body"></div>
+    </div>
+
+    <div class="column">
+      <div class="column-header">
+        <span class="column-title">Archive</span>
+        <button class="column-add">+</button>
+      </div>
+      <div id="archive-column-body" class="column-body"></div>
+    </div>
+  </div>
+
+  <!-- Export Popup Overlay -->
+  <div class="modal-overlay" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span class="modal-import">Import</span>
+          <span class="modal-export">Export</span>
+        </div>
+
+        <div class="modal-actions">
+          <button class="modal-import modal-button modal-button-clear">Clear</button>
+          <button class="modal-import modal-button modal-button-apply">Apply</button>
+          <button class="modal-export modal-button modal-button-copy">Copy</button>
+          <button class="modal-export modal-button modal-button-save">Save</button>
+          <button class="modal-close">&times;</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <textarea class="modal-textarea" placeholder="!WARNING: This will erase all previous data. Consider Exporting first. Then paste the previously exported json that you wish to restore here..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Board Name Popup -->
+  <div class="popup-overlay" id="new-board-popup" style="display:none;">
+    <div class="popup">
+      <div class="popup-section popup-new-board-name">
+        <div class="popup-header">
+          <span class="popup-title"><span class="rename-board-element">Rename: </span>Enter New Board Name</span>
+          <div class="modal-actions">
+            <button id="new-board-add-button" class="popup-button">
+              <span class="rename-board-element">&#10003;</span>
+              <span class="add-board-element">+</span>
+            </button>
+            <button id="new-board-close-button" class="popup-close">&times;</button>
+          </div>
+        </div>
+        <div class="popup-body">
+          <input type="text" id="board-name-input" class="popup-input" placeholder="Board name..." />
+        </div>
+      </div>
+      
+      <div class="popup-section popup-welcome-message" style="opacity: 0.8;">
+        <hr style="margin: 18px 0px"/>
+        <strong>&emsp;Welcome!</strong>
+        <ul style="margin-top: 4px;">
+          <li id="info-esc-close-modal-text" style="display:none;"><strong>Esc key closes this popup</strong></li>
+          <li>Cursor keys move selected card</li> 
+          <li>Double-click a card to edit</li>
+          <li>Esc key saves card edits</li>
+          <li>Esc key unselects current selected card</li>
+          <li>Enter key to quick add a new card</li> 
+        </ul>
+        <div style="color: orange">
+          <strong><span style="color: orange">&emsp;Warning:</span></strong>
+          <ul style="margin-top: 4px;">
+            <li>Once you create data, do not move local-taskboard.html</li>
+            <li>Moving local-taskboard.html on your disk may cause data loss</li>
+            <li>Incognito mode prevents data from saving</li>
+            <li>Clear your browser data erases all boards</li>
+            <li>Remember to export/back-up your boards</li>
+          </ul>
+        </div>   
+      </div>  
+      
+      <div class="popup-section popup-archive" style="display: none;">
+        <div class="popup-header">
+          <span class="popup-title">Archive/Delete</span>
+          <div class="modal-actions">
+            <button class="popup-close">&times;</button>
+          </div>
+        </div>
+        <hr />
+        <div class="popup-body">
+          <ul style="padding:0px 12px;font-size:1.2em; list-style-type: none; font-weight:bolder;">
+          <li><button class="popup-button archive-current-board-button">&times;</button>&emsp;Archive this board</li>
+          <br />
+          <li><button class="popup-button delete-current-board-button">&times;</button>&emsp;Delete this board</li>
+          <br />
+          <li><button class="popup-button delete-all-boards-button">&times;</button>&emsp;Delete ALL boards</li>
+          </ul>
+        </div>
+        <em style="opacity:0.7;">* Please consider Exporting All Boards first</em>
+      </div>
+    </div>
+  </div>
+</body>
+
+<templates style="display:none;">
+  <select>
+    <option class="board-option"></option>
+  </select>
+  
+  <div class="card">
+    <button class="card-edit" title="Edit">✎</button>
+    <div class="card-content">
+    </div>
+    <div class="card-footer">
+        <span class="card-action card-action-up">&uarr;</span>
+        <span class="card-action card-action-down">&darr;</span>
+        <span class="card-action card-action-left">&larr;</span>
+        <span class="card-action card-action-right">&rarr;</span>
+        <span class="card-action card-action-top">&uArr;</span>
+        <span class="card-action card-action-bottom">&dArr;</span>
+        <span class="card-action card-action-close card-action-remove">&times;</span>
+    </div>
+  </div>
+
+  <div class="card card-editing">
+      <textarea class="card-textarea" rows="4"></textarea>
+      <div class="card-footer card-footer-editing">
+        <span class="card-action card-action-undo" title="Undo" style="color: #993333 !important;">&#8630;</span>
+        <span class="card-action card-action-close card-action-save" style="color: #339933 !important;" title="Save">&#10003;</span>
+      </div>
+  </div>
+</templates>
+</html>
