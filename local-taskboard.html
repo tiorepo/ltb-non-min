@@ -13,7 +13,7 @@
 <body>
   <!-- Top Title Bar -->
   <div class="top-bar">
-    <div class="top-bar-title"><span>Local</span> Taskboard</div>
+    <div class="top-bar-title"><span>Local Taskboard</span></div>
 
     <div class="top-bar-actions">
       <button class="top-bar-button export-button">Export All Boards</button>
@@ -21,8 +21,8 @@
       <select id="board-select" class="top-bar-select">
         <option id="new-board-option" value="-1">...New Board</option>
       </select>
-      <button class="top-bar-button info-button" style="opacity:0.6; padding-right:4px; font-weight:bold;">&#xFF1F;</button>
-      <button class="top-bar-button archive-button" style="opacity:0.6; font-weight:bold;">&times;</button>
+      <button class="top-bar-button info-button">&#xFF1F;</button>
+      <button class="top-bar-button archive-button">&times;</button>
     </div>
   </div>
 
@@ -69,7 +69,7 @@
       <div id="done-column-body" class="column-body"></div>
     </div>
 
-    <div class="column">
+    <div class="column column-archive">
       <div class="column-header">
         <span class="column-title">Archive</span>
         <button class="column-add">+</button>
@@ -121,27 +121,37 @@
         </div>
       </div>
       
-      <div class="popup-section popup-welcome-message" style="opacity: 0.8;">
-        <hr style="margin: 18px 0px"/>
-        <strong>&emsp;Welcome!</strong>
-        <ul style="margin-top: 4px;">
+      <div class="popup-section popup-welcome-message" >
+        <hr class="popup-new-board-name"/>
+        <p style="font-size:1.2em;">
+          <strong>Welcome to Local Taskboard!</strong>
+        </p>
+        <p>
+          <em>No servers. Your data is always private and local.</em>
+        </p>
+        <ul>
           <li id="info-esc-close-modal-text" style="display:none;"><strong>Esc key closes this popup</strong></li>
           <li>Cursor keys move selected card</li> 
           <li>Double-click a card to edit</li>
           <li>Esc key saves card edits</li>
           <li>Esc key unselects current selected card</li>
-          <li>Enter key to quick add a new card</li> 
+          <li>Enter key to quick add a new card</li>
+          <li>x moves card to Archive Column</li>
+          <li><strong>x deletes card when in Archive Column</strong></li>
         </ul>
-        <div style="color: orange">
-          <strong><span style="color: orange">&emsp;Warning:</span></strong>
+        <div class="color-orange">
+          <strong><span>&emsp;Warnings:</span></strong>
           <ul style="margin-top: 4px;">
-            <li>Once you create data, do not move local-taskboard.html</li>
-            <li>Moving local-taskboard.html on your disk may cause data loss</li>
+            <li>Once you create data, moving local-taskboard.html on your disk may cause data loss</li>
             <li>Incognito mode prevents data from saving</li>
             <li>Clear your browser data erases all boards</li>
             <li>Remember to export/back-up your boards</li>
           </ul>
-        </div>   
+
+        </div>  
+        <div class="popup-footer">
+          <em>Freeware by Tio.</em> 
+        </div>
       </div>  
       
       <div class="popup-section popup-archive" style="display: none;">
@@ -181,8 +191,8 @@
         <span class="card-action card-action-down">&darr;</span>
         <span class="card-action card-action-left">&larr;</span>
         <span class="card-action card-action-right">&rarr;</span>
-        <span class="card-action card-action-top">&uArr;</span>
-        <span class="card-action card-action-bottom">&dArr;</span>
+        <span class="card-action card-action-top">&#x2B06;</span>
+        <span class="card-action card-action-bottom">&#x2B07;</span>
         <span class="card-action card-action-close card-action-remove">&times;</span>
     </div>
   </div>

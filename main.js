@@ -1,6 +1,31 @@
 var boardNames = [];
 var currentBoardName = '';
-var backlogTypeName = 'BACKLOG'
+var backlogTypeName = 'BACKLOG';
+var preferences = { isDarkMode: true };
+
+//the board name is used by local storage. 
+var defaultColumns = [
+    {name: 'Backlog', cards: []},
+    {name: 'ToDo', cards: []},
+    {name: 'In Progress', cards: []},
+    {name: 'Blocked', cards: []},
+    {name: 'Done', cards: []},
+    {name: 'Archive', cards: []}
+]
+//var newBoard = 
+
+/*
+What should be in the datastore ? 
+boardNames = []; //you have this.
+eachboard with a name 
+
+board contains all data for that board is an ordered array of columns
+where cok
+each column object has an 
+board: Array<Column> //ordered by appearance. 
+column: Column where Colum { string name, cards }
+card: Card where
+*/
 
 var cardTypes = ['BACKLOG', 'TODO', 'INPROGRESS', 'BLOCKED', 'DONE', 'ARCHIVE'];
 
@@ -28,7 +53,7 @@ function loadData() {
         loadCardsForCurrentBoard();
         renderAllCards();
     } else {
-        closePopup(); //resets to Create New
+        closePopup(); //close resets all the css properties
         $('.popup-overlay').show();
         $('.popup-overlay').find('.popup-close').hide();
         $('.popup-overlay').find('input').focus();
@@ -118,10 +143,12 @@ function closePopup() {
 }
 
 function onKeyDown(event) {
-    var isEditing = $('.card-editing').length > 1;  //1 because there is always one clone in the DOM.
+    var isEditingAndFocus = $(document.activeElement).hasClass('card-textarea');
 
-    if (isEditing && event.which != 27)
+    if (isEditingAndFocus && event.which != 27)
         return;
+
+    var isEditing = $('.board').find('.card-editing').length > 0;
 
     if (isNaN(selectedCardIndexes?.columnIndex * selectedCardIndexes?.cardIndex)) {
         clearSelectedCard();
@@ -162,8 +189,6 @@ function onKeyDown(event) {
         default:
             clearSelectedCard();
             return;
-
-        
     }
 
     if(!isEditing) {
@@ -195,7 +220,6 @@ function onCardClick(cardElement) {
         var cardIndex = $(cardElement).data('card-index');
         let columnIndex = $('.column-body').index(parentColumnBodyElement);
         selectedCardIndexes = { columnIndex, cardIndex };
-        console.log('selectedCardIndexes', selectedCardIndexes);//!!
     }
 }
 
@@ -268,17 +292,13 @@ function onTopBarButtonClick(buttonElement) {
     }
 }
 
-function restoreLocalStorage(archivedDataString) {
-  
-}
-
 function clearSelectedCard() {
     window.clearTimeout(lastKeypressTimeoutRef);
     $('.card-selected').removeClass('card-selected');
     selectedCardIndexes = {};
 }
 
-function onEditCardActionClick(buttonElement) {
+function onEditCardActionClick(buttonElement) { //This is for move and delete, need to rename. Also see onEditCardButtonClick. 
     var parentCardElement = $(buttonElement).parents('.card');
     var shouldReAddCardSelectedClass = $(parentCardElement).hasClass('card-selected');
     clearSelectedCard();
@@ -365,12 +385,11 @@ function onEditCardButtonClick(buttonElement) {
     var parentCardElement = $(buttonElement).parents('.card');
     var cardIndex = $(parentCardElement).data('card-index');
     var cardText = $(parentCardElement).find('.card-content').text();
-    var columnElement = $(buttonElement).parents('.column');
-    
     var newEditingCard = $('templates').find('.card-editing').clone();
     $(newEditingCard).data('card-index', cardIndex);
+    $(newEditingCard).data('undo', cardText);
     $(parentCardElement).replaceWith(newEditingCard);
-    $(columnElement).find('textarea').first().val(cardText).focus();
+    $(newEditingCard).find('textarea').val(cardText).focus();
 }
 
 function onEditCardSaveClick(buttonElement) {
@@ -383,21 +402,27 @@ function onEditCardSaveClick(buttonElement) {
     var newCardIndex = -1;
 
     if(cardIndex == -1) {
-        if( cardText.trim().length > 0) {
+        if(cardText.trim().length > 0) {
             newCardIndex = 0;
             cards.unshift(cardText);
             saveCurrentBoard();
+        } else {
+            $(parentCardElement).remove();
+            return;
         }
     } else if((cards?.length ?? 0) < (cardIndex + 1)) {
         alert('Error#59. Try refreshing the page');
+        return;
     } else {
         newCardIndex = cardIndex;
         cards[cardIndex] = cardText;
         saveCurrentBoard();
     }
 
-    $(parentCardElement).remove();
-    renderCards(parentColumnBodyElement);
+    var cardClone = $('templates').children('.card').first().clone();
+    $(cardClone).data('card-index', newCardIndex);
+    $(cardClone).children('.card-content').text(cardText);
+    $(parentCardElement).replaceWith(cardClone);
     
     if (newCardIndex != -1) {
         window.setTimeout(function() {
@@ -410,13 +435,8 @@ function onEditCardUndoClick(buttonElement) {
     var parentCardElement = $(buttonElement).parents('.card-editing'); 
     var cardIndex = $(parentCardElement).data('card-index');
 
-    if(cardIndex == -1) {
-        $(parentCardElement).find('textarea').val('');
-    } else {
-        var parentColumnBodyElement = $(buttonElement).parents('.column-body');
-        var cards = $(parentColumnBodyElement).cards();
-         $(parentCardElement).find('textarea').val(cards[cardIndex]);
-    }
+    var textForUndo = cardIndex == -1 ? '' : $(parentCardElement).data('undo');
+    $(parentCardElement).find('textarea').val(textForUndo);
 }
 
 function onAddNewCardClick(buttonElement) {
@@ -492,7 +512,6 @@ function onNewBoardNameAddClick() {
         clearAllCards();
     }
 
-   
     saveCurrentBoard();
     
     if ($('#board-select').val() == -2) {
@@ -600,6 +619,12 @@ function renderAllCards() {
 }
 
 function renderCards(columnBodyElement) {
+    $(columnBodyElement).find('.card-editing').each(function() {
+        $(this).find('.card-action-save').trigger('click');
+    })
+
+    if($(columnBodyElement).find('.card-editing'))
+
     $(columnBodyElement).empty();
     var cards = $(columnBodyElement).data('cards');
 
@@ -609,6 +634,10 @@ function renderCards(columnBodyElement) {
         $(cardClone).data('card-index', i);
         $(cardClone).children('.card-content').text(text);
         $(columnBodyElement).append($(cardClone));
+    }
+
+    if (preferences.isDarkMode) {
+        $(columnBodyElement).find('.card').addClass('card-dark-mode');
     }
 }
 

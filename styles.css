@@ -46,6 +46,15 @@ html, body {
   gap: 8px;
 }
 
+.top-bar-actions .info-button {
+  padding-right: 4px;
+}
+
+.top-bar-actions .archive-button,.info-button {
+  opacity: 0.6;
+  font-weight: bold;
+}
+
 /* Export / Import buttons */
 .top-bar-button {
   background-color: #2A4F6E;
@@ -75,7 +84,7 @@ html, body {
   background-color: #466691;
   border-radius: 6px;
   border: 1px solid #2c2c2c;
-
+  min-width: 192px;
   /* Important */
   height: auto;
 }
@@ -154,9 +163,16 @@ html, body {
   text-align: left;
 }
 
+.card-dark-mode {
+  color: #eeeeffee !important;
+  background-color: #001122cc !important;
+}
+
+
 .card-selected {
   filter: drop-shadow(0px 0px 8px #ffffff);
   background-color: white;
+  color: #333333;
 }
 
 .card:not(.card-editing):hover {
@@ -168,7 +184,6 @@ html, body {
 .card-content {
   padding: 0px;
   flex: 1;
-  Xwhite-space: normal;
   word-wrap: break-word;
   white-space: pre-line;
 }
@@ -241,6 +256,7 @@ html, body {
   background-color: darkgray;
   border: 1px solid lightgray;
   color: black;
+  overflow-y: visible;
 }
 
 /* Editable textarea */
@@ -258,7 +274,8 @@ html, body {
   background-color: #ffffff66;
   border-radius: 6px;
   box-sizing: border-box;
-  resize: none;
+  Xresize: none;
+  resize: both;
   margin-bottom: 8px;
   white-space: pre-line;
 }
@@ -269,6 +286,9 @@ html, body {
   border-top: 1px solid #dfe1e6;
 }
 
+.column-archive .card-action-remove {
+  color: red !important
+}
 
 .card-editing .card-action {
   color: #00000044;
@@ -372,6 +392,16 @@ html, body {
   box-sizing: border-box;
 }
 
+.archive-current-board-button {
+  background-color: orange;
+  color: #333333;
+}
+
+.delete-all-boards-button,
+.delete-current-board-button {
+  background-color: red;
+}
+
 /* Overlay */
 .popup-overlay {
   display: none; /* hidden by default */
@@ -390,7 +420,7 @@ html, body {
 
 /* Popup container */
 .popup {
-  margin-top: -25%;
+  margin-top: -10%;
   background-color: #2a2a2a;
   color: #e0e0e0;
   border-radius: 8px;
@@ -446,11 +476,33 @@ html, body {
   color: #888;
 }
 
-.archive-current-board-button {
-  background-color: orange;
-  color:#333333;
+.popup-welcome-message {
+  opacity: 0.8;
 }
 
-.delete-all-boards-button, .delete-current-board-button {
-  background-color: red;
+.popup-welcome-message hr {
+  margin: 18px 0px
 }
+
+.popup-welcome-message p {
+  padding: 0;
+  margin: 0;
+  margin-bottom: 12px;
+  padding-left: 12px;
+}
+
+.popup-footer {
+  width:100%; 
+  text-align:right; 
+  font-size:0.9em; 
+  opacity: 0.8;
+  color: white;
+  text-shadow: 3px 3px #000000;
+}
+
+/* Generics */
+.color-orange {
+  color: orange;
+}
+
+
