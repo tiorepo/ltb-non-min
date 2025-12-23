@@ -159,7 +159,7 @@ function onKeyDown(event) {
     }
 
     switch (event.which) {
-        case 37: // Left arrow
+        case 37: // Left arrow 
             $('.card-selected').find('.card-action-left').trigger('click');
            break;
         case 38: // Up arrow
@@ -320,59 +320,64 @@ function onEditCardActionClick(buttonElement) { //This is for move and delete, n
     var newCardIndex = cardIndex;
     var newColumnIndex = parentColumnBodyElementIndex;
 
-    if($(buttonElement).hasClass('card-action-up') && cardIndex != 0) {
-        newCardIndex -= 1;
-        moveArrayElement(cards, cardIndex, newCardIndex);
-    } else if ($(buttonElement).hasClass('card-action-down') && cardIndex < cards.length) {
-        newCardIndex += 1;
-        moveArrayElement(cards, cardIndex, newCardIndex);
-    } else if ($(buttonElement).hasClass('card-action-left') && parentColumnBodyElementIndex != 0) {
-        cards.splice(cardIndex, 1);
-        newColumnIndex -=1;
-        var prevColumnElement = $('.board').find('.column-body').get(newColumnIndex);
-        var prevColumnData = $(prevColumnElement).data('cards');
-        prevColumnData.unshift(card);
-        newCardIndex = Math.min(newCardIndex, prevColumnData.length - 1);
-        moveArrayElement(prevColumnData, 0, newCardIndex);
-        renderCards($(prevColumnElement));
-    } else if ($(buttonElement).hasClass('card-action-right') && parentColumnBodyElementIndex <  $('.board').find('.column-body').length - 1) {
-        cards.splice(cardIndex, 1);
-        newColumnIndex += 1;
-        var nextColumnElement = $('.board').find('.column-body').get(newColumnIndex);
-        var nextColumnData = $(nextColumnElement).data('cards');
-        nextColumnData.unshift(card);
-        newCardIndex = Math.min(newCardIndex, nextColumnData.length - 1);
-        moveArrayElement(nextColumnData, 0, newCardIndex);
-        renderCards($(nextColumnElement));
-    } else if ($(buttonElement).hasClass('card-action-top') && cardIndex < cards.length) {
-        newCardIndex = 0;
-        moveArrayElement(cards, cardIndex, newCardIndex);
-    } else if ($(buttonElement).hasClass('card-action-bottom') && cardIndex < cards.length) {
-        newCardIndex = cards.length - 1;
-        moveArrayElement(cards, cardIndex, newCardIndex);
-    } else if ($(buttonElement).hasClass('card-action-remove') && parentColumnBodyElementIndex <  $('.board').find('.column-body').length - 1) {
-        clearSelectedCard();
-        cards.splice(cardIndex, 1);
-        var archiveColumnElement = $('.board').find('.column-body').last();
-        var archiveColumnData = $(archiveColumnElement).data('cards');
-        archiveColumnData.unshift(card);
-        renderCards($(archiveColumnElement));
-    } else if ($(buttonElement).hasClass('card-action-remove') && parentColumnBodyElementIndex ==  $('.board').find('.column-body').length - 1) {
-        clearSelectedCard();
-        cards.splice(cardIndex, 1);
-    } else {
-        return;
-    }
+    $('.card-editing').find('.card-action-save').trigger('click');
 
-    saveCurrentBoard();
-    renderCards($(parentColumnBodyElement));
+    window.setTimeout(function () {
+        if($(buttonElement).hasClass('card-action-up') && cardIndex != 0) {
+            newCardIndex -= 1;
+            moveArrayElement(cards, cardIndex, newCardIndex);
+        } else if ($(buttonElement).hasClass('card-action-down') && cardIndex < cards.length) {
+            newCardIndex += 1;
+            moveArrayElement(cards, cardIndex, newCardIndex);
+        } else if ($(buttonElement).hasClass('card-action-left') && parentColumnBodyElementIndex != 0) {
+            cards.splice(cardIndex, 1);
+            newColumnIndex -=1;
+            var prevColumnElement = $('.board').find('.column-body').get(newColumnIndex);
+            var prevColumnData = $(prevColumnElement).data('cards');
+            prevColumnData.push(card);
+            newCardIndex = Math.min(newCardIndex, prevColumnData.length - 1);
+            moveArrayElement(prevColumnData, prevColumnData.length - 1, newCardIndex);
+            renderCards($(prevColumnElement));
+        } else if ($(buttonElement).hasClass('card-action-right') && parentColumnBodyElementIndex <  $('.board').find('.column-body').length - 1) {
+            cards.splice(cardIndex, 1);
+            newColumnIndex += 1;
+            var nextColumnElement = $('.board').find('.column-body').get(newColumnIndex);
+            var nextColumnData = $(nextColumnElement).data('cards');
+            nextColumnData.push(card);
+            newCardIndex = Math.min(newCardIndex, nextColumnData.length - 1);
+            moveArrayElement(nextColumnData, nextColumnData.length - 1, newCardIndex);
+            
+            renderCards($(nextColumnElement));
+        } else if ($(buttonElement).hasClass('card-action-top') && cardIndex < cards.length) {
+            newCardIndex = 0;
+            moveArrayElement(cards, cardIndex, newCardIndex);
+        } else if ($(buttonElement).hasClass('card-action-bottom') && cardIndex < cards.length) {
+            newCardIndex = cards.length - 1;
+            moveArrayElement(cards, cardIndex, newCardIndex);
+        } else if ($(buttonElement).hasClass('card-action-remove') && parentColumnBodyElementIndex <  $('.board').find('.column-body').length - 1) {
+            clearSelectedCard();
+            cards.splice(cardIndex, 1);
+            var archiveColumnElement = $('.board').find('.column-body').last();
+            var archiveColumnData = $(archiveColumnElement).data('cards');
+            archiveColumnData.unshift(card);
+            renderCards($(archiveColumnElement));
+        } else if ($(buttonElement).hasClass('card-action-remove') && parentColumnBodyElementIndex ==  $('.board').find('.column-body').length - 1) {
+            clearSelectedCard();
+            cards.splice(cardIndex, 1);
+        } else {
+            return;
+        }
 
-    if(shouldReAddCardSelectedClass) {
-        window.setTimeout(function() {
-            var newCardElement = $($('.board').find('.column-body').get(newColumnIndex)).find('.card').get(newCardIndex);
-            $(newCardElement).trigger('click');
-        }, 0);
-    }
+        saveCurrentBoard();
+        renderCards($(parentColumnBodyElement));
+
+        if(shouldReAddCardSelectedClass) {
+            window.setTimeout(function() {
+                var newCardElement = $($('.board').find('.column-body').get(newColumnIndex)).find('.card').get(newCardIndex);
+                $(newCardElement).trigger('click');
+            }, 0);
+        }
+    }, 0);
 }
 
 function moveArrayElement(arr, fromIndex, toIndex) {
