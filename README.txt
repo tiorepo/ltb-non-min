@@ -1,2 +1,2 @@
-Test2
+Serverless Kanban style taskboard. Data is always local and stays private.
 
